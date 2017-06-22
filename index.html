@@ -11,6 +11,7 @@
 	<link rel="stylesheet" href="css/spinner.css">
 	<script src="js/material-components-web.min.js"></script>
 	<script src="js/moment.min.js"></script>
+	<script src="js/query.js"></script>
 	<style>
 		main {
 			padding: 16px;
@@ -95,11 +96,6 @@
 					document.getElementById(id).innerText = lengthText + ', ' + Math.round(litres) + ' litres';
 				}
 			});
-	}
-
-	function query(query) {
-		return fetch("http://jzcpi1.local:8086/query?db=shower&epoch=ms&q=" + query)
-			.then((res) => res.json())
 	}
 
 	function htmlToElement(html) {

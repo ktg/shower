@@ -10,6 +10,7 @@
 	<link rel="stylesheet" href="css/material-components-web.min.css">
 	<script src="js/material-components-web.min.js"></script>
 	<script src="js/highcharts.js"></script>
+	<script src="js/query.js"></script>
 	<style>
 		.graph-header {
 			padding: 16px;
@@ -45,11 +46,6 @@
 	</div>
 </main>
 <script>
-	function query(query) {
-		return fetch("http://jzcpi1.local:8086/query?db=shower&epoch=ms&q=" + query)
-			.then((res) => res.json())
-	}
-
 	function drawGraph2(series, axisA, axisB, axisC, start, end, container, ylable) {
 		query("select value from " + series + " where axis = '" + axisA + "' and time > " + start + "ms and time < " + end + "ms order by time asc")
 			.then((dataA) => {
