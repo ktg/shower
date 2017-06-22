@@ -12,6 +12,10 @@
 	<script src="js/material-components-web.min.js"></script>
 	<script src="js/moment.min.js"></script>
 	<style>
+		main {
+			padding:16px;
+		}
+
 		.shower {
 			width: 14.2%;
 			padding: 16px 0 0;
@@ -30,7 +34,7 @@
 <header class="mdc-toolbar mdc-toolbar--fixed mdc-toolbar--waterfall">
 	<div class="mdc-toolbar__row">
 		<section class="mdc-toolbar__section mdc-toolbar__section--align-start">
-			<span class="mdc-toolbar__title">Shower Graphs</span>
+			<span class="mdc-toolbar__title">Showers</span>
 		</section>
 	</div>
 </header>
@@ -42,18 +46,26 @@
 			        cy="33" r="30"></circle>
 		</svg>
 	</div>
+	<div>
+	<div class="mdc-typography--title">Total</div>
+		<div class="mdc-typography--body1" id="totalTime"></div>
+		<div class="mdc-typography--body1" id="totalLitres"></div>
+	</div>
 	<div id="shower-grid" style="display: flex; flex-wrap: wrap">
-
 	</div>
 </main>
 <script>
+	let totalLitres = 0;
+	let totalTime = moment.duration(0);
 	function flow(id, start, end) {
 		query("select MEAN(value) from monitor where axis = 'FLOW' and time > " + start + "ms and time < " + end + "ms")
 			.then((data) => {
 				if ('series' in data.results[0]) {
 					const length = end.diff(start, 'ms');
 					const mins = end.diff(start, 'minutes', true);
-					const litres = Math.round(data.results[0].series[0].values[0][1] * mins);
+					const duration = moment.duration(end.diff(start));
+					totalTime.add(duration);
+					const litres = data.results[0].series[0].values[0][1] * mins;
 					let lengthText = '';
 					if (length > 60000) {
 						lengthText = Math.round(length / 60000) + " min";
@@ -61,7 +73,10 @@
 						lengthText = Math.round(length / 1000) + " sec";
 					}
 
-					document.getElementById(id).innerText = lengthText + ', ' + litres + ' litres';
+					totalLitres += litres;
+					document.getElementById('totalTime').innerText = 'Showered for ' + totalTime.humanize();
+					document.getElementById('totalLitres').innerText = 'Used ' + Math.round(totalLitres).toLocaleString() + ' litres of water';
+					document.getElementById(id).innerText = lengthText + ', ' +Math.round(litres) + ' litres';
 				}
 			});
 	}
