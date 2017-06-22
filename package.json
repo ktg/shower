@@ -1,0 +1,18 @@
+{
+  "name": "shower",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "highcharts": "^5.0.12",
+    "material-components-web": "^0.13.0",
+    "moment": "^2.18.1",
+    "pug": "^2.0.0-rc.2",
+    "pug-cli": "^1.0.0-alpha6"
+  }
+}

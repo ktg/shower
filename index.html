@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head><title>Shower Graphs</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="theme-color" content="#00838F">
+	<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+	<link rel="stylesheet" href="css/material-components-web.min.css">
+	<link rel="stylesheet" href="css/spinner.css">
+	<script src="js/material-components-web.min.js"></script>
+	<script src="js/moment.min.js"></script>
+	<style>
+		.shower {
+			width: 14.2%;
+			padding: 16px 0 0;
+		}
+
+		.shower-item {
+			padding: 4px 16px;
+		}
+
+		.shower-item:hover {
+			background-color: #ccc;
+		}
+	</style>
+</head>
+<body>
+<header class="mdc-toolbar mdc-toolbar--fixed mdc-toolbar--waterfall">
+	<div class="mdc-toolbar__row">
+		<section class="mdc-toolbar__section mdc-toolbar__section--align-start">
+			<span class="mdc-toolbar__title">Shower Graphs</span>
+		</section>
+	</div>
+</header>
+<main class="mdc-toolbar-fixed-adjust">
+	<div style="display: flex; justify-content: center; padding-top: 100px;">
+		<svg id="spinner" width="35px" height="35px" viewBox="0 0 66 66"
+		     xmlns="http://www.w3.org/2000/svg">
+			<circle class="path" fill="none" stroke-width="6" stroke-linecap="square" cx="33"
+			        cy="33" r="30"></circle>
+		</svg>
+	</div>
+	<div id="shower-grid" style="display: flex; flex-wrap: wrap">
+
+	</div>
+</main>
+<script>
+	function flow(id, start, end) {
+		query("select MEAN(value) from monitor where axis = 'FLOW' and time > " + start + "ms and time < " + end + "ms")
+			.then((data) => {
+				console.log(data);
+			});
+	}
+
+	function query(query) {
+		return fetch("http://jzcpi1.local:8086/query?db=shower&epoch=ms&q=" + query)
+			.then((res) => res.json())
+	}
+
+	function htmlToElement(html) {
+		const template = document.createElement('template');
+		template.innerHTML = html;
+		return template.content.firstChild;
+	}
+
+	query("select value from startstop")
+		.then(function (data) {
+			const gridElement = document.getElementById('shower-grid');
+			document.getElementById('spinner').style.display = 'none';
+			while (gridElement.hasChildNodes()) {
+				gridElement.removeChild(gridElement.lastChild);
+			}
+
+			let cell = null;
+			let currentDate = null;
+			let newShower = {};
+			let index = 0;
+			for (let item of data.results[0].series[0].values) {
+				if (item[1] === 1) {
+					newShower.start = moment(item[0]);
+					newShower.date = newShower.start.clone().startOf('day');
+				} else {
+					if ('start' in newShower) {
+						newShower.end = moment(item[0]);
+						const length = newShower.end.diff(newShower.start, 'ms');
+						if (length > 60000) {
+							newShower.length = Math.round(length / 60000) + " min";
+						} else {
+							newShower.length = Math.round(length / 1000) + " sec";
+						}
+
+						if (currentDate === null) {
+							const day = newShower.date.day();
+							console.log(day);
+							for (let index = 0; index <= day; index++) {
+								const difference = day - index;
+								console.log(difference);
+								const newDate = newShower.date.clone().subtract(difference, 'days');
+								cell = htmlToElement('<div class="mdc-list shower"><div class="mdc-theme--text-primary-on-primary mdc-theme--primary-bg" style="padding: 8px 16px"><div>' + newDate.format('ddd') + '</div><div class="mdc-typography--caption">' + newDate.format("D MMM") + '</div></div></div>');
+								gridElement.appendChild(cell);
+							}
+						} else {
+							const days = newShower.date.diff(currentDate, 'days');
+							console.log(days, currentDate.toISOString(), newShower.start.toISOString());
+							if (days !== 0) {
+								for (let index = 1; index <= days; index++) {
+									const difference = days - index;
+									console.log(difference);
+									const newDate = newShower.start.clone().subtract(difference, 'days');
+									cell = htmlToElement('<div class="mdc-list shower"><div class="mdc-theme--text-primary-on-primary mdc-theme--primary-bg" style="padding: 8px 16px"><div>' + newDate.format('ddd') + '</div><div class="mdc-typography--caption">' + newDate.format("D MMM") + '</div></div></div>');
+									gridElement.appendChild(cell);
+								}
+							}
+
+						}
+						currentDate = newShower.date;
+						cell.appendChild(htmlToElement('<a href="shower.html" class="mdc-list-item shower-item"><span class="mdc-list-item__text">Shower ' + newShower.start.format('H:mm') + '<span class="mdc-list-item__text__secondary" id="shower_' + index + '_caption">' + newShower.length + '</span></span></a>'));
+						flow('shower_' + index + '_caption', newShower.start, newShower.end);
+						index++;
+					}
+					newShower = {};
+				}
+			}
+		});
+
+	let toolbar = mdc.toolbar.MDCToolbar.attachTo(document.querySelector('.mdc-toolbar'));
+	toolbar.fixedAdjustElement = document.querySelector('.mdc-toolbar-fixed-adjust');
+
+	mdc.autoInit();
+</script>
+</body>
+</html>
