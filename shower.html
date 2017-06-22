@@ -10,40 +10,38 @@
 	<link rel="stylesheet" href="css/material-components-web.min.css">
 	<script src="js/material-components-web.min.js"></script>
 	<script src="js/highcharts.js"></script>
+	<style>
+		.graph-header {
+			padding: 16px;
+			margin: 16px 0;
+		}
+	</style>
 </head>
 <body>
 <header class="mdc-toolbar mdc-toolbar--fixed mdc-toolbar--waterfall">
 	<div class="mdc-toolbar__row">
 		<section class="mdc-toolbar__section mdc-toolbar__section--align-start">
-			<a id="menu" href="#" class="material-icons mdc-toolbar__icon--menu">menu</a>
+			<a href="index.html" class="material-icons mdc-toolbar__icon--menu">arrow_back</a>
 			<span class="mdc-toolbar__title">Shower Graphs</span>
 		</section>
 	</div>
 </header>
-<aside class="mdc-temporary-drawer mdc-typography">
-	<nav class="mdc-temporary-drawer__drawer">
-		<header class="mdc-temporary-drawer__header">
-			<div class="mdc-temporary-drawer__header-content">
-				Showers
-			</div>
-		</header>
-		<nav id="shower-list" class="mdc-temporary-drawer__content mdc-list mdc-list--two-line mdc-list--dense">
-		</nav>
-	</nav>
-</aside>
 <main class="mdc-toolbar-fixed-adjust">
 
-	<div class="col-sm-9">
-		<div class="panel-body" id="FLOW"></div>
+	<div style="padding: 16px; display:flex; flex-direction: column">
+		<div class="graph-header mdc-theme--text-primary-on-primary mdc-theme--primary-bg mdc-typography--subheading2">Water Flow</div>
+		<div id="FLOW"></div>
+		<div class="graph-header mdc-theme--text-primary-on-primary mdc-theme--primary-bg mdc-typography--subheading2">Water Temperature</div>
+		<div id="TEMP"></div>
 
-		<div class="panel-body" id="TEMP"></div>
-
+		<div class="graph-header mdc-theme--text-primary-on-primary mdc-theme--primary-bg mdc-typography--subheading2">Scale</div>
 		<div id="scale"></div>
 
+		<div class="graph-header mdc-theme--text-primary-on-primary mdc-theme--primary-bg mdc-typography--subheading2">Shower Head Magnetometer</div>
 		<div id="mag"></div>
-
+		<div class="graph-header mdc-theme--text-primary-on-primary mdc-theme--primary-bg mdc-typography--subheading2">Shower Head Accelerometer</div>
 		<div id="acc"></div>
-
+		<div class="graph-header mdc-theme--text-primary-on-primary mdc-theme--primary-bg mdc-typography--subheading2">Shower Head Gyroscope</div>
 		<div id="gyr"></div>
 	</div>
 </main>
@@ -73,9 +71,6 @@
 								}
 
 								Highcharts.chart(container, {
-									chart: {
-										zoomType: 'x'
-									},
 									title: {text: ''},
 									xAxis: {
 										type: 'datetime',
@@ -128,9 +123,6 @@
 				}
 
 				Highcharts.chart(container, {
-					chart: {
-						zoomType: 'x'
-					},
 					title: {text: ''},
 					legend: {enabled: false},
 					xAxis: {
@@ -186,66 +178,32 @@
 			});
 	}
 
-	function htmlToElement(html) {
-		const template = document.createElement('template');
-		template.innerHTML = html;
-		return template.content.firstChild;
-	}
-
 	function loadShower(start, end) {
-		drawGraph("monitor", "FLOW", start, end, 'FLOW', "Flow litres/min");
-		drawGraph("monitor", "TEMP", start, end, 'TEMP', "Temperature ºC");
+		drawGraph("monitor", "FLOW", start, end, 'FLOW', "litres/min");
+		drawGraph("monitor", "TEMP", start, end, 'TEMP', "ºC");
 		drawGraph("scale", "scale", start, end, 'scale', "Weight change g");
 		drawGraph2("head", "ax", "ay", "az", start, end, 'acc', "g", "Head Accelerometer");
 		drawGraph2("head", "mx", "my", "mz", start, end, 'mag', "g", "Head Magnetometer");
 		drawGraph2("head", "gx", "gy", "gz", start, end, 'gyr', "g", "Head Gyroscope");
 	}
 
-	query("select value from startstop")
-		.then(function (data) {
-			const listElement = document.getElementById('shower-list');
-			while (listElement.hasChildNodes()) {
-				listElement.removeChild(listElement.lastChild);
-			}
+	function getParameterByName(name) {
+		name = name.replace(/[\[\]]/g, "\\$&");
+		let regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+			results = regex.exec(window.location.href);
+		if (!results) return null;
+		if (!results[2]) return '';
+		return decodeURIComponent(results[2].replace(/\+/g, " "));
+	}
 
-			let newShower = {};
-			for (let item of data.results[0].series[0].values) {
-				if (item[1] === 1) {
-					newShower.start = item[0];
-					let date = new Date(item[0]);
-					newShower.date = date.toLocaleString('en-GB', {
-							day: 'numeric', month: 'short',
-							hour: 'numeric', minute: '2-digit'
-						});
-				} else {
-					if ('start' in newShower) {
-						newShower.end = item[0];
-						let length = newShower.end - newShower.start;
-						if(length > 60000) {
-							newShower.length = Math.round(length / 60000) + " min";
-						} else {
-							newShower.length = Math.round(length / 1000) + " sec";
-						}
-
-						if(!listElement.hasChildNodes()) {
-							loadShower(newShower.start, newShower.end);
-						}
-
-						// Append Item to menu
-						listElement.appendChild(htmlToElement('<a onclick="loadShower(' + newShower.start + ',' + newShower.end + ')" class="mdc-list-item"><span class="material-icons mdc-list-item__start-detail">show_chart</span><span class="mdc-list-item__text">Shower ' + newShower.date + '<span class="mdc-list-item__text__secondary">' + newShower.length + '</span></span></a>'));
-					}
-					newShower = {};
-				}
-			}
-		});
+	const start = getParameterByName('start');
+	const end = getParameterByName('end');
+	loadShower(start, end);
 
 	mdc.autoInit();
 
 	let toolbar = mdc.toolbar.MDCToolbar.attachTo(document.querySelector('.mdc-toolbar'));
 	toolbar.fixedAdjustElement = document.querySelector('.mdc-toolbar-fixed-adjust');
-
-	let drawer = new mdc.drawer.MDCTemporaryDrawer(document.querySelector('.mdc-temporary-drawer'));
-	document.querySelector('#menu').addEventListener('click', () => drawer.open = true);
 </script>
 </body>
 </html>

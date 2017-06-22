@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html>
-<head><title>Shower Graphs</title>
+<head><title>Showers</title>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta name="mobile-web-app-capable" content="yes">
@@ -35,7 +35,7 @@
 	</div>
 </header>
 <main class="mdc-toolbar-fixed-adjust">
-	<div style="display: flex; justify-content: center; padding-top: 100px;">
+	<div id="spin-container" style="display: flex; justify-content: center; padding-top: 100px;">
 		<svg id="spinner" width="35px" height="35px" viewBox="0 0 66 66"
 		     xmlns="http://www.w3.org/2000/svg">
 			<circle class="path" fill="none" stroke-width="6" stroke-linecap="square" cx="33"
@@ -50,7 +50,19 @@
 	function flow(id, start, end) {
 		query("select MEAN(value) from monitor where axis = 'FLOW' and time > " + start + "ms and time < " + end + "ms")
 			.then((data) => {
-				console.log(data);
+				if ('series' in data.results[0]) {
+					const length = end.diff(start, 'ms');
+					const mins = end.diff(start, 'minutes', true);
+					const litres = Math.round(data.results[0].series[0].values[0][1] * mins);
+					let lengthText = '';
+					if (length > 60000) {
+						lengthText = Math.round(length / 60000) + " min";
+					} else {
+						lengthText = Math.round(length / 1000) + " sec";
+					}
+
+					document.getElementById(id).innerText = lengthText + ', ' + litres + ' litres';
+				}
 			});
 	}
 
@@ -68,7 +80,7 @@
 	query("select value from startstop")
 		.then(function (data) {
 			const gridElement = document.getElementById('shower-grid');
-			document.getElementById('spinner').style.display = 'none';
+			document.getElementById('spin-container').style.display = 'none';
 			while (gridElement.hasChildNodes()) {
 				gridElement.removeChild(gridElement.lastChild);
 			}
@@ -93,21 +105,17 @@
 
 						if (currentDate === null) {
 							const day = newShower.date.day();
-							console.log(day);
 							for (let index = 0; index <= day; index++) {
 								const difference = day - index;
-								console.log(difference);
 								const newDate = newShower.date.clone().subtract(difference, 'days');
 								cell = htmlToElement('<div class="mdc-list shower"><div class="mdc-theme--text-primary-on-primary mdc-theme--primary-bg" style="padding: 8px 16px"><div>' + newDate.format('ddd') + '</div><div class="mdc-typography--caption">' + newDate.format("D MMM") + '</div></div></div>');
 								gridElement.appendChild(cell);
 							}
 						} else {
 							const days = newShower.date.diff(currentDate, 'days');
-							console.log(days, currentDate.toISOString(), newShower.start.toISOString());
 							if (days !== 0) {
 								for (let index = 1; index <= days; index++) {
 									const difference = days - index;
-									console.log(difference);
 									const newDate = newShower.start.clone().subtract(difference, 'days');
 									cell = htmlToElement('<div class="mdc-list shower"><div class="mdc-theme--text-primary-on-primary mdc-theme--primary-bg" style="padding: 8px 16px"><div>' + newDate.format('ddd') + '</div><div class="mdc-typography--caption">' + newDate.format("D MMM") + '</div></div></div>');
 									gridElement.appendChild(cell);
@@ -116,7 +124,7 @@
 
 						}
 						currentDate = newShower.date;
-						cell.appendChild(htmlToElement('<a href="shower.html" class="mdc-list-item shower-item"><span class="mdc-list-item__text">Shower ' + newShower.start.format('H:mm') + '<span class="mdc-list-item__text__secondary" id="shower_' + index + '_caption">' + newShower.length + '</span></span></a>'));
+						cell.appendChild(htmlToElement('<a href="shower.html?start=' + newShower.start + '&end=' + newShower.end + '" class="mdc-list-item shower-item"><span class="mdc-list-item__text">Shower ' + newShower.start.format('H:mm') + '<span class="mdc-list-item__text__secondary" id="shower_' + index + '_caption">' + newShower.length + '</span></span></a>'));
 						flow('shower_' + index + '_caption', newShower.start, newShower.end);
 						index++;
 					}
