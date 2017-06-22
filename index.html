@@ -13,7 +13,7 @@
 	<script src="js/moment.min.js"></script>
 	<style>
 		main {
-			padding:16px;
+			padding: 16px;
 		}
 
 		.shower {
@@ -47,7 +47,7 @@
 		</svg>
 	</div>
 	<div>
-	<div class="mdc-typography--title">Total</div>
+		<div class="mdc-typography--title">Total</div>
 		<div class="mdc-typography--body1" id="totalTime"></div>
 		<div class="mdc-typography--body1" id="totalLitres"></div>
 	</div>
@@ -55,8 +55,8 @@
 	</div>
 </main>
 <script>
-	let totalLitres = 0;
-	let totalTime = moment.duration(0);
+	let total_litres = 0;
+	let total_time = moment.duration(0);
 	function flow(id, start, end) {
 		query("select MEAN(value) from monitor where axis = 'FLOW' and time > " + start + "ms and time < " + end + "ms")
 			.then((data) => {
@@ -64,7 +64,7 @@
 					const length = end.diff(start, 'ms');
 					const mins = end.diff(start, 'minutes', true);
 					const duration = moment.duration(end.diff(start));
-					totalTime.add(duration);
+					total_time.add(duration);
 					const litres = data.results[0].series[0].values[0][1] * mins;
 					let lengthText = '';
 					if (length > 60000) {
@@ -73,10 +73,10 @@
 						lengthText = Math.round(length / 1000) + " sec";
 					}
 
-					totalLitres += litres;
-					document.getElementById('totalTime').innerText = 'Showered for ' + totalTime.humanize();
-					document.getElementById('totalLitres').innerText = 'Used ' + Math.round(totalLitres).toLocaleString() + ' litres of water';
-					document.getElementById(id).innerText = lengthText + ', ' +Math.round(litres) + ' litres';
+					total_litres += litres;
+					document.getElementById('totalTime').innerText = 'Showered for ' + total_time.humanize();
+					document.getElementById('totalLitres').innerText = 'Used ' + Math.round(total_litres).toLocaleString() + ' litres of water';
+					document.getElementById(id).innerText = lengthText + ', ' + Math.round(litres) + ' litres';
 				}
 			});
 	}
