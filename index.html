@@ -46,15 +46,24 @@
 			        cy="33" r="30"></circle>
 		</svg>
 	</div>
-	<div>
-		<div class="mdc-typography--title">Total</div>
-		<div class="mdc-typography--body1" id="totalTime"></div>
-		<div class="mdc-typography--body1" id="totalLitres"></div>
+	<div style="display: flex">
+		<div>
+			<div class="mdc-typography--title">Total</div>
+			<div class="mdc-typography--body1" id="totalTime"></div>
+			<div class="mdc-typography--body1" id="totalLitres"></div>
+		</div>
+		<div style="margin-left: 16px">
+			<div class="mdc-typography--title">Average</div>
+			<div class="mdc-typography--body1" id="averageTime"></div>
+			<div class="mdc-typography--body1" id="averageLitres"></div>
+		</div>
 	</div>
+
 	<div id="shower-grid" style="display: flex; flex-wrap: wrap">
 	</div>
 </main>
 <script>
+	let total_showers = 0;
 	let total_litres = 0;
 	let total_time = moment.duration(0);
 	function flow(id, start, end) {
@@ -73,7 +82,14 @@
 						lengthText = Math.round(length / 1000) + " sec";
 					}
 
+					total_showers++;
 					total_litres += litres;
+
+					const average_time = total_time / total_showers;
+					const average_litres = total_litres / total_showers;
+					document.getElementById('averageTime').innerText = 'Showered for ' + moment.duration(average_time).humanize();
+					document.getElementById('averageLitres').innerText = 'Used ' + Math.round(average_litres).toLocaleString() + ' litres of water';
+
 					document.getElementById('totalTime').innerText = 'Showered for ' + total_time.humanize();
 					document.getElementById('totalLitres').innerText = 'Used ' + Math.round(total_litres).toLocaleString() + ' litres of water';
 					document.getElementById(id).innerText = lengthText + ', ' + Math.round(litres) + ' litres';
