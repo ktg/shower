@@ -37,149 +37,89 @@
 		<div class="graph-header mdc-theme--text-primary-on-primary mdc-theme--primary-bg mdc-typography--subheading2">Scale</div>
 		<div id="scale"></div>
 
-		<div class="graph-header mdc-theme--text-primary-on-primary mdc-theme--primary-bg mdc-typography--subheading2">Shower Head Magnetometer</div>
-		<div id="mag"></div>
-		<div class="graph-header mdc-theme--text-primary-on-primary mdc-theme--primary-bg mdc-typography--subheading2">Shower Head Accelerometer</div>
-		<div id="acc"></div>
-		<div class="graph-header mdc-theme--text-primary-on-primary mdc-theme--primary-bg mdc-typography--subheading2">Shower Head Gyroscope</div>
-		<div id="gyr"></div>
+		<div class="graph-header mdc-theme--text-primary-on-primary mdc-theme--primary-bg mdc-typography--subheading2">Shower Head Movement</div>
+		<div id="head"></div>
 	</div>
 </main>
 <script>
-	function drawGraph2(series, axisA, axisB, axisC, start, end, container, ylable) {
-		query("select value from " + series + " where axis = '" + axisA + "' and time > " + start + "ms and time < " + end + "ms order by time asc")
-			.then((dataA) => {
-				query("select value from " + series + " where axis = '" + axisB + "' and time > " + start + "ms and time < " + end + "ms order by time asc")
-					.then((dataB) => {
-						query("select value from " + series + " where axis = '" + axisC + "' and time > " + start + "ms and time < " + end + "ms order by time asc")
-							.then((dataC) => {
-								if (dataA.results[0].series) {
-									dataA = dataA.results[0].series[0].values;
-								}
+	const axisMappings = {
+		"ax": "Accelerometer x",
+		"ay": "Accelerometer y",
+		"az": "Accelerometer z",
+		"mx": "Magnetometer x",
+		"my": "Magnetometer y",
+		"mz": "Magnetometer z",
+		"gx": "Gyroscope x",
+		"gy": "Gyroscope y",
+		"gz": "Gyroscope z",
+		"TEMP": "Temperature",
+		"FLOW": "Water Flow"
+	};
 
-								if (dataB.results[0].series) {
-									dataB = dataB.results[0].series[0].values;
-								}
+	function drawGraphs(series, axises, start, end, container, ylabel) {
+		let proms = [];
+		for(let axis of axises) {
+			proms.push(query("select value from " + series + " where axis = '" + axis + "' and time > " + start + "ms and time < " + end + "ms order by time asc", axis));
+		}
 
-								if (dataC.results[0].series) {
-									dataC = dataC.results[0].series[0].values;
-								}
-
-								Highcharts.chart(container, {
-									title: {text: ''},
-									xAxis: {
-										type: 'datetime',
-										min: start,
-										max: end,
-										title: {
-											text: 'timestamp'
-										}
-									},
-									yAxis: {
-										title: {
-											text: ylable
-										}
-									},
-									tooltip: {
-										headerFormat: '<b>{series.name}</b><br>',
-										pointFormat: '{point.y:.1f} {point.x:%e %b, %H:%M:%S}'
-									},
-
-									plotOptions: {
-										scatter: {
-											marker: {
-												enabled: true,
-												radius: 1.5
-											}
-										}
-									},
-
-									series: [{
-										name: axisA,
-										data: dataA
-									}, {
-										name: axisB,
-										data: dataB
-									}, {
-										name: axisC,
-										data: dataC
-									}]
-								});
-							});
-					});
-			});
-	}
-
-	function drawGraph(series, axisA, start, end, container, ylable) {
-		query("select value from " + series + " where axis = '" + axisA + "' and time >= " + start + "ms and time <= " + end + "ms order by time asc")
-			.then(function (dataA) {
-				if (dataA.results[0].series) {
-					dataA = dataA.results[0].series[0].values;
+		Promise.all(proms)
+			.then((data) => {
+				let series = [];
+				for(let dataSet of data) {
+					console.log(dataSet);
+					console.log(dataSet.results[0].series);
+					if(dataSet.results[0].series) {
+						let axis = dataSet.axis;
+						if(dataSet.axis in axisMappings) {
+							axis = axisMappings[axis];
+						}
+						series.push({
+							name: axis,
+							data: dataSet.results[0].series[0].values
+						});
+					}
 				}
+				console.log(series);
 
 				Highcharts.chart(container, {
 					title: {text: ''},
-					legend: {enabled: false},
 					xAxis: {
 						type: 'datetime',
 						min: start,
 						max: end,
+						title: {
+							text: 'timestamp'
+						}
 					},
 					yAxis: {
 						title: {
-							text: ylable
-						},
-						min: 0
+							text: ylabel
+						}
 					},
 					tooltip: {
 						headerFormat: '<b>{series.name}</b><br>',
-						pointFormat: '{point.x:%H:%M:%S}, {point.y:.1f}'
+						pointFormat: '{point.y:.1f} {point.x:%e %b, %H:%M:%S}'
 					},
 
 					plotOptions: {
-						area: {
-							fillColor: {
-								linearGradient: {
-									x1: 0,
-									y1: 0,
-									x2: 0,
-									y2: 1
-								},
-								stops: [
-									[0, Highcharts.getOptions().colors[0]],
-									[1, Highcharts.Color(Highcharts.getOptions().colors[0]).setOpacity(0).get('rgba')]
-								]
-							},
+						scatter: {
 							marker: {
-								radius: 2
-							},
-							lineWidth: 1,
-							states: {
-								hover: {
-									lineWidth: 1
-								}
-							},
-							threshold: null
+								enabled: true,
+								radius: 1.5
+							}
 						}
 					},
 
-					series: [
-						{
-							name: axisA,
-							data: dataA
-						}
-					]
+					series: series
 				});
-			});
+			})
 	}
 
 	function loadShower(start, end) {
-		drawGraph("monitor", "FLOW", start, end, 'FLOW', "litres/min");
-		drawGraph("monitor", "TEMP", start, end, 'TEMP', "ºC");
-		drawGraph("scale", "scale", start, end, 'scale', "Weight change g");
-		drawGraph2("head", "ax", "ay", "az", start, end, 'acc', "g", "Head Accelerometer");
-		drawGraph2("head", "mx", "my", "mz", start, end, 'mag', "g", "Head Magnetometer");
-		drawGraph2("head", "gx", "gy", "gz", start, end, 'gyr', "g", "Head Gyroscope");
+		drawGraphs("monitor", ["FLOW"], start, end, 'FLOW', "litres/min");
+		drawGraphs("monitor", ["TEMP"], start, end, 'TEMP', "ºC");
+		drawGraphs("scale", ["scale"], start, end, 'scale', "Weight change g");
+		drawGraphs("head", ["ax", "ay", "az", "mx", "my", "mz", "gx", "gy", "gz"], start, end, 'head', "g");
 	}
 
 	function getParameterByName(name) {
